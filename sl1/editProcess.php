@@ -1,3 +1,27 @@
+<?php
+    session_start();
+    include("config.php");
+
+    $id = $_SESSION['idSes'];
+    $str_query = "select*from profile where id='$id'";
+    $query = mysqli_query($connection, $str_query);
+    $data = mysqli_fetch_array($query);
+
+    $namaDepan  = $data['namaDepan'];
+    $namaTengah = $data['namaTengah'];
+    $namaBelakang = $data['namaBelakang'];
+    $nik = $data['nik'];
+    $email = $data['email'];
+    $noHP = $data['noHP'];
+    $alamat = $data['alamat'];
+    $kodePos = $data['kodePos'];
+    $username = $data['username'];
+    $tempatLahir = $data['tempatLahir'];
+    $tanggalLahir = $data['tanggalLahir'];
+    $wargaNegara = $data['wargaNegara'];
+    $fotoProfil = $data['fotoProfil'];
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,21 +34,17 @@
 <body>
 
     <?php
-        $namaDepan  = $namaTengah = $namaBelakang = $nik = "";
-        $email = $noHP = $alamat = $kodePos = "";
-        $username = $password = $cpassword = "";
+        
 
         $namaDepanErr = $namaTengahErr = $namaBelakangErr = $nikErr = "";
         $wargaNegaraErr = $emailErr = $noHPErr = $alamatErr = $kodePosErr = "";
-        $usernameErr = $passwordErr = $cpasswordErr = $fotoProfilErr = "";
+        $usernameErr = $newPasswordErr = $cpasswordErr = $fotoProfilErr = "";
     
-        $tempatLahir = $tanggalLahir = $wargaNegara ="";
-        
-        
-
-
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $canContinue = true;
+        $gantiPassword = true;
+        $gantiProfil = true;
+
         function endsWith($string, $endString){
             $len = strlen($endString);
             if ($len == 0) {
@@ -55,7 +75,7 @@
             $namaDepan = test_input($_POST["namaDepan"]);
             if(!preg_match("/^[a-zA-Z-' ]*$/", $namaDepan)) {
                 $namaDepanErr = "*Nama Depan hanya dapat diiisi huruf";
-                $namaDepan = ""; $canContinue = false;
+                $canContinue = false;
             }
             else {
                 $namaDepanErr = "";
@@ -70,7 +90,7 @@
             $namaTengah = test_input($_POST["namaTengah"]);
             if(!preg_match("/^[a-zA-Z-' ]*$/", $namaTengah)) {
                 $namaTengahErr = "*Nama Tengah hanya dapat diiisi huruf";
-                $namaTengah = ""; $canContinue = false;
+                $canContinue = false;
             }
             else {
                 $namaTengahErr = "";
@@ -187,79 +207,103 @@
         
         
         
-        if (empty(test_input($_POST["password"]))){
-            $passwordErr = "*Password harus diisi";
-            $password = ""; $canContinue = false;
+        if (empty(test_input($_POST["newPassword"]))){
+            $gantiPassword = false;
+            $newPasswordErr = "";
         }
         else {
-            $password = test_input($_POST["password"]);
-            if(strlen($password) <5 || (!preg_match("/[a-z]/i", $password) || !preg_match('~[0-9]+~', $password))) {
-                $passwordErr = "Password harus terdiri lebih dari 5 huruf & angka";
-                $password = ""; $canContinue = false;
+            
+            $newPassword = test_input($_POST["newPassword"]);
+            
+            
+            if(strlen($newPassword) <5 || (!preg_match("/[a-z]/i", $newPassword) || !preg_match('~[0-9]+~', $newPassword))) {
+                $newPasswordErr = "Password harus terdiri lebih dari 5 huruf & angka";
+                $newPassword=""; $canContinue = false; $gantiPassword = false;
             }
             else {
-                $passwordErr = "";
-            }
-        }
-        
-        if (empty(test_input($_POST["cpassword"]))){
-            $cpasswordErr = "*Confirm Password harus diisi";
-            $cpassword = ""; $canContinue = false;
-        }
-        else {
-            $cpassword = test_input($_POST["cpassword"]);
-            if(!($cpassword === $password)) {
-                $cpasswordErr = "*Confirm Pasword tidak sesuai";
-                $cpassword = ""; $canContinue = false;
-            }
-            else {
-                $cpasswordErr = "";
+                $newPasswordErr = "";
+                $gantiPassword = true;
             }
         }
 
-        $fotoProfil = $_FILES["fotoProfil"];
-        if (!$fotoProfil["tmp_name"]) {
-          $fotoProfilErr = "*Foto Profil harus diisi"; $canContinue = false;
+        $newFotoProfil = $_FILES["newFotoProfil"];
+        if (!$newFotoProfil["tmp_name"]) {
+            $gantiProfil = false;
         }
         else{
-          if(!getimagesize($fotoProfil["tmp_name"])){
+          if(!getimagesize($newFotoProfil["tmp_name"])){
             $fotoProfilErr = "*File harus berformat foto"; $canContinue = false;
+            $gantiProfil = false;
+          }
+          else {
+            $fotoProfilErr = ""; $canContinue = true;
+            $gantiProfil = true;
           }
         }
 
 
 
         if($canContinue) {
-            session_start();
-            if(isset($_POST['register'])){
-                
-                // echo $username."-".$pass;
-                //masukin ke database
-                include("config.php");
-                $str_query = "insert into profile values ( '',
-                '".$_POST['namaDepan']."',
-                '".$_POST['namaTengah']."',
-                '".$_POST['namaBelakang']."',
-                '".$_POST['nik']."',
-                '".$_POST['tempatLahir']."',
-                '".$_POST['tanggalLahir']."',
-                '".$_POST['wargaNegara']."',
-                '".$_POST['email']."',
-                '".$_POST['noHP']."',
-                '".$_POST['alamat']."',
-                '".$_POST['kodePos']."',
-                '".$_POST['username']."',
-                '".$_POST['password']."',
-                '"."img/".$_FILES["fotoProfil"]["name"]."')";
+            if(isset($_POST['edit'])){
+                //update ke database
+
+                $str_query = "update profile set 
+                namaDepan = '".$_POST['namaDepan']."',
+                namaTengah = '".$_POST['namaTengah']."',
+                namaBelakang = '".$_POST['namaBelakang']."',
+                nik = '".$_POST['nik']."',
+                tempatLahir = '".$_POST['tempatLahir']."',
+                tanggalLahir = '".$_POST['tanggalLahir']."',
+                wargaNegara = '".$_POST['wargaNegara']."',
+                email = '".$_POST['email']."',
+                noHP = '".$_POST['noHP']."',
+                alamat = '".$_POST['alamat']."',
+                kodePos = '".$_POST['kodePos']."',
+                username = '".$_POST['username']."'
+                where id = '".$id."'";
 
                 $query = mysqli_query($connection, $str_query);
 
-                $tmp_name = $fotoProfil["tmp_name"];
-                $pic_name = $fotoProfil["name"];
-                $_SESSION['fotoProfilNameSes'] = $pic_name;
-                move_uploaded_file($tmp_name, "img/"."$pic_name");
-    
-                header("location:login.php");
+                if($gantiPassword){
+
+                    $str_query = "update profile set 
+                    password = '".$_POST['newPassword']."'
+                    where id = '".$id."'";
+
+                    $query = mysqli_query($connection, $str_query);
+                }
+
+                if($gantiProfil){
+                    $tmp_name = $newFotoProfil["tmp_name"];
+                    $pic_name = $newFotoProfil["name"];
+                    move_uploaded_file($tmp_name, "img/"."$pic_name");
+
+                    $str_query = "update profile set 
+                    fotoProfil = '"."img/".$_FILES["newFotoProfil"]["name"]."'
+                    where id = '".$id."'";
+
+                    $query = mysqli_query($connection, $str_query);
+                }
+
+                if($query){
+                    echo "<script>";
+                        echo "alert('Profil berhasil diupdate')";
+                    echo "</script>";
+        
+                    echo "<script>";
+                        echo "window.location='profile.php'";
+                    echo "</script>";
+                }
+                else {
+                    echo "<script>";
+                        echo "alert('Profil gagal diupdate')";
+                    echo "</script>";
+        
+                    echo "<script>";
+                        echo "window.location='editProcess.php'";
+                    echo "</script>";
+                }
+                
             }
         }
 
@@ -267,16 +311,16 @@
 
     ?>
 
-   <div class="title">Register</div>
-
+   <div class="title">Update Profile</div>
     <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post" enctype="multipart/form-data">
+        
         <table>
             <tr>
-                <td><div class="field">Nama Depan*</div></td>
+                <td><div class="field">Nama Depan</div></td>
                 <td><input type="text" name="namaDepan" id="namaDepanID" value="<?php echo $namaDepan;?>"></td>
-                <td><div class="field">Nama Tengah*</div></td>
+                <td><div class="field">Nama Tengah</div></td>
                 <td><input type="text" name="namaTengah" id="namaTengahID" value="<?php echo $namaTengah;?>"></td>
-                <td><div class="field">Nama Belakang*</div></td>
+                <td><div class="field">Nama Belakang</div></td>
                 <td><input type="text" name="namaBelakang" id="namaID" value="<?php echo $namaBelakang;?>"></td>
             </tr>
             <tr>
@@ -284,36 +328,44 @@
                 <td><input type="text" name="tempatLahir" id="tempatLahirID" value="<?php echo $tempatLahir;?>"></td>
                 <td><div class="field">Tanggal Lahir</div></td>
                 <td><input type="date" name="tanggalLahir" id="tanggalLahirID" value="<?php echo $tanggalLahir;?>"></td>
-                <td><div class="field">NIK*</div></td>
+                <td><div class="field">NIK</div></td>
                 <td><input type="text" name="nik" id="nikID" value="<?php echo $nik;?>"></td>
             </tr>
             <tr>
                 <td><div class="field">Warga Negara</div></td>
                 <td><input type="text" name="wargaNegara" id="wargaNegaraID" value="<?php echo $wargaNegara;?>"></td>
-                <td><div class="field">Email*</div></td>
+                <td><div class="field">Email</div></td>
                 <td><input type="text" name="email" id="email" value="<?php echo $email;?>"></td>
-                <td><div class="field">No HP*</div></td>
+                <td><div class="field">No HP</div></td>
                 <td><input type="text" name="noHP" id="noHPID" value="<?php echo $noHP;?>"></td>
             </tr>
             <tr>
-                <td><div class="field">Alamat*</div></td>
+                <td><div class="field">Alamat</div></td>
                 <td><textarea name="alamat" id="alamatID" rows="100" cols="38" > <?php echo $alamat;?> </textarea></td>
-                <td><div class="field">Kode Pos*</div></td>
+                <td><div class="field">Kode Pos</div></td>
                 <td><input type="text" name="kodePos" id="kodePosID" value="<?php echo $kodePos;?>"></td>
-                <td><div class="field">Foto Profil*</div></td>
-                <td><input type="file" name="fotoProfil" id="fotoProfilID"></td>
+                <td><div class="field">Username</div></td>
+                <td><input type="text" name="username" id="usernameID" value="<?php echo $username;?>"></td>
             </tr>
 
             <tr>
-                <td><div class="field">Username*</div></td>
-                <td><input type="text" name="username" id="usernameID" value="<?php echo $username;?>"></td>
-                <td><div class="field">Password*</div></td>
-                <td><input type="password" name="password" id="passwordID" ></td>
-                <td><div class="field">Confirm*</div></td>
-                <td><input type="password" name="cpassword" id="cpasswordID" ></td>
+
+                <td><div class="field">New Password</div></td>
+                <td><input type="password" name="newPassword" id="newPasswordID" ></td>
+                
+                <td>
+                    <div class="field">Foto Profil</div>
+                    <?php
+                        $pic_name = $data['fotoProfil'];
+
+                    ?>
+                </td>
+                <<td><input type="file" name="newFotoProfil" id="newFotoProfilID"></td>
+                <td colspan="2"><div class="profile"><img src="<?php echo $pic_name ?>" alt=""></div></td>
             </tr>
             
-        </table>   
+        </table>  
+
 
         <div class="erorField">
             <span class="error"> <?php echo $namaDepanErr." ";?></span>
@@ -332,14 +384,13 @@
         <div class="erorField">
             <span class="error"> <?php echo $kodePosErr." ";?></span>
             <span class="error"> <?php echo $usernameErr." ";?></span>
-            <span class="error"> <?php echo $passwordErr." ";?></span>
-            <span class="error"> <?php echo $cpasswordErr." ";?></span>
+            <span class="error"> <?php echo $newPasswordErr." ";?></span>
             <span class="error"> <?php echo $fotoProfilErr." ";?></span>
         </div>
 
         <div class="subtitle">
-            <a href="./index.php">Kembali</a>
-            <input type="submit" class="submit" name="register" value="Register">
+            <a href="./profile.php">Kembali</a>
+            <input type="submit" class="submit" name="edit" value="Edit">
         </div>
         
 

@@ -1,5 +1,11 @@
 <?php
     session_start();
+    include("config.php");
+
+    $id = $_SESSION['idSes'];
+    $str_query = "select*from profile where id='$id'";
+    $query = mysqli_query($connection, "$str_query");
+    $data = mysqli_fetch_array($query);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,10 +26,10 @@
 
     <div class="homeMessage">Hello 
         <?php
-            echo $_SESSION['namaDepanSes'];
+            echo $data['namaDepan'];
             
-            if (isset($_SESSION['namaTengahSes']) !="") echo " ".$_SESSION['namaTengahSes'];
-            if (isset($_SESSION['namaBelakangSes']) !="") echo " ".$_SESSION['namaBelakangSes'];
+            echo " ".$data['namaTengah'];
+            echo " ".$data['namaBelakang'];
 
         ?>
         
